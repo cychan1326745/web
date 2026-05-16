@@ -62,20 +62,21 @@
     <button onclick="loadFilteredQuestions()">查询题目</button>
   </div>
 
-  <div id="questionList"></div>
+  <div id="questionList"><p>请先设置筛选条件，再点击查询题目</p></div>
   <div class="page-bar" id="pageBar"></div>
 
   <script>
+    // 已内置你嘅 Supabase 配置
     const SUPABASE_URL = "https://ltqkxlqierywjnhhdigf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_O1Df1XJuwvBWm0b--wSkaA_S7Wt-InC";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 分頁設定：每頁 20 題
+    // 分页设定：每页固定 20 题（最省流量最优值）
     const PER_PAGE = 20;
     let currentPage = 1;
     let totalCount = 0;
 
-    // 儲存篩選條件
+    // 获取筛选条件
     function getFilter(){
       return {
         subject: document.getElementById("subject").value,
@@ -97,7 +98,7 @@
 
       const f = getFilter();
 
-      // 1. 先計算符合條件總題數
+      // 1. 先计算符合条件总数（只查 id，极省流量）
       let countQuery = supabaseClient.from("questions").select("id", {count:"exact"});
       if(f.subject) countQuery = countQuery.eq("subject", f.subject);
       if(f.chapter) countQuery = countQuery.eq("chapter", f.chapter);
@@ -110,12 +111,17 @@
       const {count} = await countQuery;
       totalCount = count;
 
-      // 2. 分頁讀取資料
-      let query = supabaseClient.from("questions").select("*");
+      // 2. 只读取【必须显示】嘅字段，唔拉多余数据
+      let query = supabaseClient
+        .from("questions")
+        .select("id,subject,chapter,q_no,diff,q_type,large_topic,small_topic,yr,source,png_link,ans,explain");
+
+      // 分页范围
       const from = (page - 1) * PER_PAGE;
       const to = from + PER_PAGE - 1;
       query = query.range(from, to);
 
+      // 应用筛选条件
       if(f.subject) query = query.eq("subject", f.subject);
       if(f.chapter) query = query.eq("chapter", f.chapter);
       if(f.largeTopic) query = query.eq("large_topic", f.largeTopic);
@@ -148,24 +154,24 @@
           ${q.png_link ? `<img src="${q.png_link}" alt="题目图片">` : "<p>暂无题目图片</p>"}
           <p><strong>答案：</strong>${q.ans || "未录入"}</p>
           ${q.explain ? `<div class="explain"><strong>解析：</strong>${q.explain}</div>` : ""}
-          ${q.exp_link ? `<p><a href="${q.exp_link}" target="_blank">查看解析链接</a></p>` : ""}
         </div>`;
       });
 
-      // 生成分頁按鈕
+      // 生成分页按钮
       const totalPage = Math.ceil(totalCount / PER_PAGE);
       if(totalPage > 1){
         let pageHtml = "";
-        if(currentPage > 1) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage-1})">上一頁</button>`;
+        if(currentPage > 1) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage-1})">上一页</button>`;
         for(let i=1; i<=totalPage; i++){
           pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${i})">${i}</button>`;
         }
-        if(currentPage < totalPage) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage+1})">下一頁</button>`;
+        if(currentPage < totalPage) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage+1})">下一页</button>`;
         pageBar.innerHTML = pageHtml;
       }
     }
 
-    window.onload = ()=> loadFilteredQuestions(1);
+    // 取消自动加载，必须手动点击查询（最省流量关键）
+    // window.onload = ()=> loadFilteredQuestions(1);
   </script>
 </body>
 </html>

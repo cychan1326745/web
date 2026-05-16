@@ -3,66 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DSE 题库｜筛选系统</title>
-  <!-- Supabase SDK -->
+  <title>DSE 物理题库｜筛选系统</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    * { box-sizing: border-box; font-family: system-ui, sans-serif; }
     body { max-width: 950px; margin: 0 auto; padding: 20px; background: #f5f7fa; }
     .filter-panel {
-      background: #fff;
-      padding: 16px;
-      border-radius: 10px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 10px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+      background: #fff; padding: 16px; border-radius: 10px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+      gap: 10px; margin-bottom: 24px; box-shadow: 0 1px 6px rgba(0,0,0,0.05);
     }
-    select, input, button {
-      padding: 9px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
+    select, input, button { padding: 9px; border: 1px solid #ccc; border-radius: 6px; font-size:14px; }
+    button { background: #2563eb; color: white; border: none; cursor: pointer; }
     button:hover { background: #1d4ed8; }
     .question-card {
-      background: white;
-      padding: 16px;
-      border-radius: 8px;
-      margin: 12px 0;
+      background: white; padding: 16px; border-radius: 8px; margin:12px 0;
       box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
-    .question-card img {
-      width: 100%;
-      max-width: 750px;
-      display: block;
-      margin: 10px 0;
-    }
-    .meta { font-size: 13px; color: #666; margin-bottom: 8px; }
+    .question-card img { width:100%; max-width:750px; margin:10px 0; }
+    .meta { font-size:13px; color:#666; margin-bottom:8px; }
   </style>
 </head>
 <body>
-  <h2>DSE 题库筛选系统</h2>
+  <h2>DSE 物理题库筛选系统</h2>
 
-  <!-- 完整筛选栏（完全对应你的字段） -->
   <div class="filter-panel">
     <select id="subject">
       <option value="">全部科目</option>
       <option value="Physics">Physics</option>
-      <option value="Economics">Economics</option>
     </select>
 
     <select id="chapter">
       <option value="">全部章节</option>
       <option value="ch01">ch01</option>
       <option value="ch02">ch02</option>
+      <option value="ch03">ch03</option>
     </select>
 
     <select id="large_topic">
@@ -80,24 +55,22 @@
       <option value="Hard">Hard</option>
     </select>
 
-    <input type="number" id="q_no" placeholder="题号（q_no）">
-    <input type="number" id="yr" placeholder="年份（yr）">
+    <input type="number" id="q_no" placeholder="题号">
+    <input type="number" id="yr" placeholder="年份">
     <button onclick="loadFilteredQuestions()">查询题目</button>
   </div>
 
   <div id="questionList"></div>
 
   <script>
-    // ========== 请填入你的 Supabase 配置 ==========
+    // ========== 已自动填入你的 Supabase 资料 ==========
     const SUPABASE_URL = "https://ltqkxlqierywjnhhdigf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_O1Df1XJuwvBWm0b--wSkaA_S7Wt-InC";
-    // ==============================================
+    // ==================================================
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 加载筛选题目（100% 匹配你的字段）
     async function loadFilteredQuestions() {
-      // 获取筛选条件
       const subject = document.getElementById("subject").value;
       const chapter = document.getElementById("chapter").value;
       const largeTopic = document.getElementById("large_topic").value;
@@ -106,8 +79,7 @@
       const qNo = document.getElementById("q_no").value;
       const yr = document.getElementById("yr").value;
 
-      // 构建查询
-      let query = supabase.from("questions").select("*");
+      let query = supabase.from("questions").select();
 
       if (subject) query = query.eq("subject", subject);
       if (chapter) query = query.eq("chapter", chapter);
@@ -117,41 +89,35 @@
       if (qNo) query = query.eq("q_no", qNo);
       if (yr) query = query.eq("yr", yr);
 
-      // 执行查询
       const { data, error } = await query;
+      const list = document.getElementById("questionList");
+      list.innerHTML = "";
+
       if (error) {
-        console.error("查询错误：", error);
-        alert("查询出错，请检查配置");
+        list.innerHTML = "<p>加载失败：" + error.message + "</p>";
         return;
       }
-
-      // 渲染结果
-      const listEl = document.getElementById("questionList");
-      listEl.innerHTML = "";
-
       if (data.length === 0) {
-        listEl.innerHTML = "<p>没有找到符合条件的题目</p>";
+        list.innerHTML = "<p>暂无符合条件的题目</p>";
         return;
       }
 
       data.forEach(q => {
-        listEl.innerHTML += `
-          <div class="question-card">
-            <div class="meta">
-              科目：${q.subject} | 章节：${q.chapter} | 题号：${q.q_no} | 难度：${q.diff}
-            </div>
-            <div class="meta">
-              大主题：${q.large_topic || "无"} | 小主题：${q.small_topic || "无"} | 年份：${q.yr || "无"}
-            </div>
-            ${q.png_link ? `<img src="${q.png_link}" alt="题目图片">` : "<p>无题目图片</p>"}
-            <p><strong>答案：</strong>${q.ans || "未录入"}</p>
-            ${q.exp_link ? `<p><a href="${q.exp_link}" target="_blank">查看解析</a></p>` : ""}
+        list.innerHTML += `
+        <div class="question-card">
+          <div class="meta">
+            科目：${q.subject}｜章节：${q.chapter}｜题号：${q.q_no}｜难度：${q.diff}
           </div>
-        `;
+          <div class="meta">
+            大主题：${q.large_topic || "无"}｜小主题：${q.small_topic || "无"}｜年份：${q.yr || "无"}
+          </div>
+          ${q.png_link ? `<img src="${q.png_link}" alt="题目">` : ""}
+          <p><strong>答案：</strong>${q.ans || ""}</p>
+          ${q.exp_link ? `<a href="${q.exp_link}" target="_blank">查看解析</a>` : ""}
+        </div>`;
       });
     }
 
-    // 页面加载时自动加载一次（无筛选）
     window.onload = loadFilteredQuestions;
   </script>
 </body>

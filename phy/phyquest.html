@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DSE 物理题库｜筛选系统</title>
+  <title>DSE A物理题库｜筛选系统</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
@@ -68,7 +68,8 @@
     const SUPABASE_KEY = "sb_publishable_O1Df1XJuwvBWm0b--wSkaA_S7Wt-InC";
     // ==================================================
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 修正：使用不同变量名避免重复声明
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function loadFilteredQuestions() {
       const subject = document.getElementById("subject").value;
@@ -79,7 +80,7 @@
       const qNo = document.getElementById("q_no").value;
       const yr = document.getElementById("yr").value;
 
-      let query = supabase.from("questions").select();
+      let query = supabaseClient.from("questions").select("*");
 
       if (subject) query = query.eq("subject", subject);
       if (chapter) query = query.eq("chapter", chapter);

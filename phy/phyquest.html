@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DSE B物理题库｜筛选系统</title>
+  <title>DSE 物理題庫｜篩選系統</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h2>DSE 物理题库筛选系统</h2>
+  <h2>DSE 物理題庫篩選系統</h2>
 
   <div class="filter-panel">
     <select id="subject">
@@ -37,48 +37,46 @@
     </select>
 
     <select id="chapter">
-      <option value="">全部章节</option>
+      <option value="">全部章節</option>
       <option value="ch02">ch02</option>
-      <option value="ch03">ch03</option>
-      <option value="ch04">ch04</option>
     </select>
 
     <select id="large_topic">
-      <option value="">全部大主题</option>
+      <option value="">全部大主題</option>
       <option value="內能與熱傳遞">內能與熱傳遞</option>
     </select>
 
     <select id="small_topic">
-      <option value="">全部小主题</option>
+      <option value="">全部小主題</option>
       <option value="內能與熱傳遞">內能與熱傳遞</option>
     </select>
 
     <select id="diff">
-      <option value="">全部难度</option>
+      <option value="">全部難度</option>
       <option value="easy">easy</option>
       <option value="avg">avg</option>
     </select>
 
-    <input type="number" id="q_no" placeholder="题号">
+    <input type="number" id="q_no" placeholder="題號">
     <input type="number" id="yr" placeholder="年份">
-    <button onclick="loadFilteredQuestions()">查询题目</button>
+    <button onclick="loadFilteredQuestions()">查詢題目</button>
   </div>
 
-  <div id="questionList"><p>请先设置筛选条件，再点击查询题目</p></div>
+  <div id="questionList"><p>請先設定篩選條件，再點擊查詢題目</p></div>
   <div class="page-bar" id="pageBar"></div>
 
   <script>
-    // 已内置你嘅 Supabase 配置
+    // 已內置你的 Supabase 設定
     const SUPABASE_URL = "https://ltqkxlqierywjnhhdigf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_O1Df1XJuwvBWm0b--wSkaA_S7Wt-InC";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 分页设定：每页固定 20 题（最省流量最优值）
-    const PER_PAGE = 20;
+    // 每頁 10 題（流量再減半）
+    const PER_PAGE = 10;
     let currentPage = 1;
     let totalCount = 0;
 
-    // 获取筛选条件
+    // 取得篩選條件
     function getFilter(){
       return {
         subject: document.getElementById("subject").value,
@@ -95,12 +93,12 @@
       currentPage = page;
       const list = document.getElementById("questionList");
       const pageBar = document.getElementById("pageBar");
-      list.innerHTML = "<p>正在加载...</p>";
+      list.innerHTML = "<p>正在載入...</p>";
       pageBar.innerHTML = "";
 
       const f = getFilter();
 
-      // 1. 先计算符合条件总数（只查 id，极省流量）
+      // 只計算總數（極省流量）
       let countQuery = supabaseClient.from("questions").select("id", {count:"exact"});
       if(f.subject) countQuery = countQuery.eq("subject", f.subject);
       if(f.chapter) countQuery = countQuery.eq("chapter", f.chapter);
@@ -113,17 +111,15 @@
       const {count} = await countQuery;
       totalCount = count;
 
-      // 2. 只读取【必须显示】嘅字段，唔拉多余数据
+      // 只讀取必要欄位
       let query = supabaseClient
         .from("questions")
         .select("id,subject,chapter,q_no,diff,q_type,large_topic,small_topic,yr,source,png_link,ans,explain");
 
-      // 分页范围
       const from = (page - 1) * PER_PAGE;
       const to = from + PER_PAGE - 1;
       query = query.range(from, to);
 
-      // 应用筛选条件
       if(f.subject) query = query.eq("subject", f.subject);
       if(f.chapter) query = query.eq("chapter", f.chapter);
       if(f.largeTopic) query = query.eq("large_topic", f.largeTopic);
@@ -135,11 +131,11 @@
       const { data, error } = await query;
 
       if (error) {
-        list.innerHTML = `<p>查询失败：${error.message}</p>`;
+        list.innerHTML = `<p>查詢失敗：${error.message}</p>`;
         return;
       }
       if (data.length === 0) {
-        list.innerHTML = "<p>暂无符合条件的题目</p>";
+        list.innerHTML = "<p>暫無符合條件之題目</p>";
         return;
       }
 
@@ -148,32 +144,31 @@
         list.innerHTML += `
         <div class="question-card">
           <div class="meta">
-            科目：${q.subject}｜章节：${q.chapter}｜题号：${q.q_no}｜难度：${q.diff || "未设置"}｜类型：${q.q_type || "未设置"}
+            科目：${q.subject}｜章節：${q.chapter}｜題號：${q.q_no}｜難度：${q.diff || "未設定"}｜類型：${q.q_type || "未設定"}
           </div>
           <div class="meta">
-            大主题：${q.large_topic || "无"}｜小主题：${q.small_topic || "无"}｜年份：${q.yr || "无"}｜来源：${q.source || "无"}
+            大主題：${q.large_topic || "無"}｜小主題：${q.small_topic || "無"}｜年份：${q.yr || "無"}｜來源：${q.source || "無"}
           </div>
-          ${q.png_link ? `<img src="${q.png_link}" alt="题目图片">` : "<p>暂无题目图片</p>"}
-          <p><strong>答案：</strong>${q.ans || "未录入"}</p>
+          ${q.png_link ? `<img src="${q.png_link}" alt="題目圖片">` : "<p>暫無題目圖片</p>"}
+          <p><strong>答案：</strong>${q.ans || "未錄入"}</p>
           ${q.explain ? `<div class="explain"><strong>解析：</strong>${q.explain}</div>` : ""}
         </div>`;
       });
 
-      // 生成分页按钮
+      // 生成分頁按鈕
       const totalPage = Math.ceil(totalCount / PER_PAGE);
       if(totalPage > 1){
         let pageHtml = "";
-        if(currentPage > 1) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage-1})">上一页</button>`;
+        if(currentPage > 1) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage-1})">上一頁</button>`;
         for(let i=1; i<=totalPage; i++){
           pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${i})">${i}</button>`;
         }
-        if(currentPage < totalPage) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage+1})">下一页</button>`;
+        if(currentPage < totalPage) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage+1})">下一頁</button>`;
         pageBar.innerHTML = pageHtml;
       }
     }
 
-    // 取消自动加载，必须手动点击查询（最省流量关键）
-    // window.onload = ()=> loadFilteredQuestions(1);
+    // 關閉自動載入，必須手動查詢
   </script>
 </body>
 </html>

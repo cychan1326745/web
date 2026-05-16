@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DSE 物理题库｜筛选系统</title>
+  <title>DSE A物理题库｜筛选系统</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
@@ -22,6 +22,7 @@
     }
     .question-card img { width:100%; max-width:750px; margin:10px 0; }
     .meta { font-size:13px; color:#666; margin-bottom:8px; }
+    .explain { margin-top:10px; padding:10px; background:#f0f4ff; border-radius:6px; font-size:14px; }
   </style>
 </head>
 <body>
@@ -35,10 +36,7 @@
 
     <select id="chapter">
       <option value="">全部章节</option>
-      <option value="ch01">ch01</option>
       <option value="ch02">ch02</option>
-      <option value="ch03">ch03</option>
-      <option value="ch04">ch04</option>
     </select>
 
     <select id="large_topic">
@@ -48,13 +46,13 @@
 
     <select id="small_topic">
       <option value="">全部小主题</option>
+      <option value="內能與熱傳遞">內能與熱傳遞</option>
     </select>
 
     <select id="diff">
       <option value="">全部难度</option>
-      <option value="Easy">Easy</option>
-      <option value="Medium">Medium</option>
-      <option value="Hard">Hard</option>
+      <option value="easy">easy</option>
+      <option value="avg">avg</option>
     </select>
 
     <input type="number" id="q_no" placeholder="题号">
@@ -106,14 +104,15 @@
         list.innerHTML += `
         <div class="question-card">
           <div class="meta">
-            科目：${q.subject}｜章节：${q.chapter}｜题号：${q.q_no}｜难度：${q.diff || "未设置"}
+            科目：${q.subject}｜章节：${q.chapter}｜题号：${q.q_no}｜难度：${q.diff || "未设置"}｜类型：${q.q_type || "未设置"}
           </div>
           <div class="meta">
-            大主题：${q.large_topic || "无"}｜小主题：${q.small_topic || "无"}｜年份：${q.yr || "无"}
+            大主题：${q.large_topic || "无"}｜小主题：${q.small_topic || "无"}｜年份：${q.yr || "无"}｜来源：${q.source || "无"}
           </div>
           ${q.png_link ? `<img src="${q.png_link}" alt="题目图片">` : "<p>暂无题目图片</p>"}
           <p><strong>答案：</strong>${q.ans || "未录入"}</p>
-          ${q.exp_link ? `<p><a href="${q.exp_link}" target="_blank">查看解析</a></p>` : ""}
+          ${q.explain ? `<div class="explain"><strong>解析：</strong>${q.explain}</div>` : ""}
+          ${q.exp_link ? `<p><a href="${q.exp_link}" target="_blank">查看解析链接</a></p>` : ""}
         </div>`;
       });
     }

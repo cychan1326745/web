@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DSE 物理題庫｜篩選系統</title>
+  <title>DSE 物理題庫｜MC系統</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
@@ -25,6 +25,13 @@
     .explain { margin-top:10px; padding:10px; background:#f0f4ff; border-radius:6px; font-size:14px; }
     .page-bar { margin-top:20px; text-align:center; }
     .page-btn { margin:0 4px; padding:8px 14px; }
+
+    /* 作答按鈕樣式 */
+    .answer-bar { margin-top:12px; display:flex; gap:10px; }
+    .ans-btn { flex:1; padding:12px 0; font-size:16px; font-weight:bold; }
+    .ans-btn.correct { background:#28a745; }
+    .ans-btn.wrong { background:#dc3545; }
+    .result-text { margin-top:10px; font-weight:bold; }
   </style>
 </head>
 <body>
@@ -71,7 +78,7 @@
     const SUPABASE_KEY = "sb_publishable_O1Df1XJuwvBWm0b--wSkaA_S7Wt-InC";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 每頁 10 題（流量再減半）
+    // 每頁 10 題
     const PER_PAGE = 10;
     let currentPage = 1;
     let totalCount = 0;
@@ -86,6 +93,31 @@
         diff: document.getElementById("diff").value,
         qNo: document.getElementById("q_no").value,
         yr: document.getElementById("yr").value
+      }
+    }
+
+    // 作答核對邏輯
+    function checkAnswer(btnEl, userAns, correctAns, containerEl, explainText){
+      // 鎖定所有按鈕
+      const allBtns = containerEl.querySelectorAll(".ans-btn");
+      allBtns.forEach(b => b.disabled = true);
+
+      // 標示正確/錯誤
+      if(userAns === correctAns){
+        btnEl.classList.add("correct");
+        containerEl.insertAdjacentHTML("beforeend", `<div class="result-text" style="color:#28a745;">✅ 答對！</div>`);
+      } else {
+        btnEl.classList.add("wrong");
+        // 標示正確答案
+        allBtns.forEach(b => {
+          if(b.dataset.ans === correctAns) b.classList.add("correct");
+        });
+        containerEl.insertAdjacentHTML("beforeend", `<div class="result-text" style="color:#dc3545;">❌ 錯誤，正確答案：${correctAns}</div>`);
+      }
+
+      // 顯示解析
+      if(explainText){
+        containerEl.insertAdjacentHTML("beforeend", `<div class="explain"><strong>解析：</strong>${explainText}</div>`);
       }
     }
 
@@ -141,8 +173,9 @@
 
       list.innerHTML = "";
       data.forEach(q => {
-        list.innerHTML += `
-        <div class="question-card">
+        const card = document.createElement("div");
+        card.className = "question-card";
+        card.innerHTML = `
           <div class="meta">
             科目：${q.subject}｜章節：${q.chapter}｜題號：${q.q_no}｜難度：${q.diff || "未設定"}｜類型：${q.q_type || "未設定"}
           </div>
@@ -150,9 +183,22 @@
             大主題：${q.large_topic || "無"}｜小主題：${q.small_topic || "無"}｜年份：${q.yr || "無"}｜來源：${q.source || "無"}
           </div>
           ${q.png_link ? `<img src="${q.png_link}" alt="題目圖片">` : "<p>暫無題目圖片</p>"}
-          <p><strong>答案：</strong>${q.ans || "未錄入"}</p>
-          ${q.explain ? `<div class="explain"><strong>解析：</strong>${q.explain}</div>` : ""}
-        </div>`;
+          <div class="answer-bar">
+            <button class="ans-btn" data-ans="A">A</button>
+            <button class="ans-btn" data-ans="B">B</button>
+            <button class="ans-btn" data-ans="C">C</button>
+            <button class="ans-btn" data-ans="D">D</button>
+          </div>
+        `;
+        list.appendChild(card);
+
+        // 綁定作答事件
+        const ansBtns = card.querySelectorAll(".ans-btn");
+        ansBtns.forEach(btn => {
+          btn.onclick = () => {
+            checkAnswer(btn, btn.dataset.ans, q.ans?.toUpperCase(), card, q.explain);
+          };
+        });
       });
 
       // 生成分頁按鈕
@@ -167,8 +213,6 @@
         pageBar.innerHTML = pageHtml;
       }
     }
-
-    // 關閉自動載入，必須手動查詢
   </script>
 </body>
 </html>

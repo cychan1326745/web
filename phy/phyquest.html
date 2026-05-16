@@ -23,6 +23,8 @@
     .question-card img { width:100%; max-width:750px; margin:10px 0; }
     .meta { font-size:13px; color:#666; margin-bottom:8px; }
     .explain { margin-top:10px; padding:10px; background:#f0f4ff; border-radius:6px; font-size:14px; }
+    .page-bar { margin-top:20px; text-align:center; }
+    .page-btn { margin:0 4px; padding:8px 14px; }
   </style>
 </head>
 <body>
@@ -61,60 +63,75 @@
   </div>
 
   <div id="questionList"></div>
+  <div class="page-bar" id="pageBar"></div>
 
   <script>
-    // 已自动填入你的 Supabase 资料
     const SUPABASE_URL = "https://ltqkxlqierywjnhhdigf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_O1Df1XJuwvBWm0b--wSkaA_S7Wt-InC";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function loadFilteredQuestions() {
+    // 分頁設定：每頁 20 題
+    const PER_PAGE = 20;
+    let currentPage = 1;
+    let totalCount = 0;
+
+    // 儲存篩選條件
+    function getFilter(){
+      return {
+        subject: document.getElementById("subject").value,
+        chapter: document.getElementById("chapter").value,
+        largeTopic: document.getElementById("large_topic").value,
+        smallTopic: document.getElementById("small_topic").value,
+        diff: document.getElementById("diff").value,
+        qNo: document.getElementById("q_no").value,
+        yr: document.getElementById("yr").value
+      }
+    }
+
+    async function loadFilteredQuestions(page = 1) {
+      currentPage = page;
       const list = document.getElementById("questionList");
+      const pageBar = document.getElementById("pageBar");
       list.innerHTML = "<p>正在加载...</p>";
+      pageBar.innerHTML = "";
 
-      // 先拉取所有题目，看看数据库里到底有没有数据
-      const { data: allData, error: allError } = await supabaseClient.from("questions").select("*");
-      console.log("数据库里的所有题目：", allData, allError);
+      const f = getFilter();
 
-      if (allError) {
-        list.innerHTML = `<p>数据库连接失败：${allError.message}</p>`;
-        return;
-      }
+      // 1. 先計算符合條件總題數
+      let countQuery = supabaseClient.from("questions").select("id", {count:"exact"});
+      if(f.subject) countQuery = countQuery.eq("subject", f.subject);
+      if(f.chapter) countQuery = countQuery.eq("chapter", f.chapter);
+      if(f.largeTopic) countQuery = countQuery.eq("large_topic", f.largeTopic);
+      if(f.smallTopic) countQuery = countQuery.eq("small_topic", f.smallTopic);
+      if(f.diff) countQuery = countQuery.eq("diff", f.diff);
+      if(f.qNo) countQuery = countQuery.eq("q_no", f.qNo);
+      if(f.yr) countQuery = countQuery.eq("yr", f.yr);
 
-      if (allData.length === 0) {
-        list.innerHTML = "<p>数据库里没有任何题目数据，请先录入题目！</p>";
-        return;
-      }
+      const {count} = await countQuery;
+      totalCount = count;
 
-      // 再执行带筛选的查询
-      const subject = document.getElementById("subject").value;
-      const chapter = document.getElementById("chapter").value;
-      const largeTopic = document.getElementById("large_topic").value;
-      const smallTopic = document.getElementById("small_topic").value;
-      const diff = document.getElementById("diff").value;
-      const qNo = document.getElementById("q_no").value;
-      const yr = document.getElementById("yr").value;
-
+      // 2. 分頁讀取資料
       let query = supabaseClient.from("questions").select("*");
+      const from = (page - 1) * PER_PAGE;
+      const to = from + PER_PAGE - 1;
+      query = query.range(from, to);
 
-      // 修复：当不选科目时，不添加 subject 筛选条件，直接查所有
-      if (subject) query = query.eq("subject", subject);
-      if (chapter) query = query.eq("chapter", chapter);
-      if (largeTopic) query = query.eq("large_topic", largeTopic);
-      if (smallTopic) query = query.eq("small_topic", smallTopic);
-      if (diff) query = query.eq("diff", diff);
-      if (qNo) query = query.eq("q_no", qNo);
-      if (yr) query = query.eq("yr", yr);
+      if(f.subject) query = query.eq("subject", f.subject);
+      if(f.chapter) query = query.eq("chapter", f.chapter);
+      if(f.largeTopic) query = query.eq("large_topic", f.largeTopic);
+      if(f.smallTopic) query = query.eq("small_topic", f.smallTopic);
+      if(f.diff) query = query.eq("diff", f.diff);
+      if(f.qNo) query = query.eq("q_no", f.qNo);
+      if(f.yr) query = query.eq("yr", f.yr);
 
       const { data, error } = await query;
-      console.log("筛选后的题目：", data, error);
 
       if (error) {
         list.innerHTML = `<p>查询失败：${error.message}</p>`;
         return;
       }
       if (data.length === 0) {
-        list.innerHTML = `<p>暂无符合条件的题目（数据库里共有 ${allData.length} 条题目）</p>`;
+        list.innerHTML = "<p>暂无符合条件的题目</p>";
         return;
       }
 
@@ -134,9 +151,21 @@
           ${q.exp_link ? `<p><a href="${q.exp_link}" target="_blank">查看解析链接</a></p>` : ""}
         </div>`;
       });
+
+      // 生成分頁按鈕
+      const totalPage = Math.ceil(totalCount / PER_PAGE);
+      if(totalPage > 1){
+        let pageHtml = "";
+        if(currentPage > 1) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage-1})">上一頁</button>`;
+        for(let i=1; i<=totalPage; i++){
+          pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${i})">${i}</button>`;
+        }
+        if(currentPage < totalPage) pageHtml += `<button class="page-btn" onclick="loadFilteredQuestions(${currentPage+1})">下一頁</button>`;
+        pageBar.innerHTML = pageHtml;
+      }
     }
 
-    window.onload = loadFilteredQuestions;
+    window.onload = ()=> loadFilteredQuestions(1);
   </script>
 </body>
 </html>

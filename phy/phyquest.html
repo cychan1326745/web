@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DSE A物理题库｜筛选系统</title>
+  <title>DSE 物理题库｜筛选系统</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
@@ -30,7 +30,7 @@
   <div class="filter-panel">
     <select id="subject">
       <option value="">全部科目</option>
-      <option value="Physics">Physics</option>
+      <option value="phy">物理（phy）</option>
     </select>
 
     <select id="chapter">
@@ -38,10 +38,12 @@
       <option value="ch01">ch01</option>
       <option value="ch02">ch02</option>
       <option value="ch03">ch03</option>
+      <option value="ch04">ch04</option>
     </select>
 
     <select id="large_topic">
       <option value="">全部大主题</option>
+      <option value="內能與熱傳遞">內能與熱傳遞</option>
     </select>
 
     <select id="small_topic">
@@ -63,12 +65,9 @@
   <div id="questionList"></div>
 
   <script>
-    // ========== 已自动填入你的 Supabase 资料 ==========
+    // 已自动填入你的 Supabase 资料
     const SUPABASE_URL = "https://ltqkxlqierywjnhhdigf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_O1Df1XJuwvBWm0b--wSkaA_S7Wt-InC";
-    // ==================================================
-
-    // 修正：使用不同变量名避免重复声明
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function loadFilteredQuestions() {
@@ -95,7 +94,7 @@
       list.innerHTML = "";
 
       if (error) {
-        list.innerHTML = "<p>加载失败：" + error.message + "</p>";
+        list.innerHTML = `<p>加载失败：${error.message}</p>`;
         return;
       }
       if (data.length === 0) {
@@ -107,14 +106,14 @@
         list.innerHTML += `
         <div class="question-card">
           <div class="meta">
-            科目：${q.subject}｜章节：${q.chapter}｜题号：${q.q_no}｜难度：${q.diff}
+            科目：${q.subject}｜章节：${q.chapter}｜题号：${q.q_no}｜难度：${q.diff || "未设置"}
           </div>
           <div class="meta">
             大主题：${q.large_topic || "无"}｜小主题：${q.small_topic || "无"}｜年份：${q.yr || "无"}
           </div>
-          ${q.png_link ? `<img src="${q.png_link}" alt="题目">` : ""}
-          <p><strong>答案：</strong>${q.ans || ""}</p>
-          ${q.exp_link ? `<a href="${q.exp_link}" target="_blank">查看解析</a>` : ""}
+          ${q.png_link ? `<img src="${q.png_link}" alt="题目图片">` : "<p>暂无题目图片</p>"}
+          <p><strong>答案：</strong>${q.ans || "未录入"}</p>
+          ${q.exp_link ? `<p><a href="${q.exp_link}" target="_blank">查看解析</a></p>` : ""}
         </div>`;
       });
     }

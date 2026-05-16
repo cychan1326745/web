@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DSE A物理题库｜筛选系统</title>
+  <title>DSE 物理题库｜筛选系统</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
@@ -69,6 +69,24 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function loadFilteredQuestions() {
+      const list = document.getElementById("questionList");
+      list.innerHTML = "<p>正在加载...</p>";
+
+      // 先拉取所有题目，看看数据库里到底有没有数据
+      const { data: allData, error: allError } = await supabaseClient.from("questions").select("*");
+      console.log("数据库里的所有题目：", allData, allError);
+
+      if (allError) {
+        list.innerHTML = `<p>数据库连接失败：${allError.message}</p>`;
+        return;
+      }
+
+      if (allData.length === 0) {
+        list.innerHTML = "<p>数据库里没有任何题目数据，请先录入题目！</p>";
+        return;
+      }
+
+      // 再执行带筛选的查询
       const subject = document.getElementById("subject").value;
       const chapter = document.getElementById("chapter").value;
       const largeTopic = document.getElementById("large_topic").value;
@@ -79,6 +97,7 @@
 
       let query = supabaseClient.from("questions").select("*");
 
+      // 修复：当不选科目时，不添加 subject 筛选条件，直接查所有
       if (subject) query = query.eq("subject", subject);
       if (chapter) query = query.eq("chapter", chapter);
       if (largeTopic) query = query.eq("large_topic", largeTopic);
@@ -88,18 +107,18 @@
       if (yr) query = query.eq("yr", yr);
 
       const { data, error } = await query;
-      const list = document.getElementById("questionList");
-      list.innerHTML = "";
+      console.log("筛选后的题目：", data, error);
 
       if (error) {
-        list.innerHTML = `<p>加载失败：${error.message}</p>`;
+        list.innerHTML = `<p>查询失败：${error.message}</p>`;
         return;
       }
       if (data.length === 0) {
-        list.innerHTML = "<p>暂无符合条件的题目</p>";
+        list.innerHTML = `<p>暂无符合条件的题目（数据库里共有 ${allData.length} 条题目）</p>`;
         return;
       }
 
+      list.innerHTML = "";
       data.forEach(q => {
         list.innerHTML += `
         <div class="question-card">
